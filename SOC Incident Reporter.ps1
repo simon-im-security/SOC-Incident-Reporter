@@ -58,6 +58,7 @@ $XAML = @"
                     <ComboBoxItem Content="Critical - Highly advanced and persistent threats, such as APT threats, nation-state actors, or large-scale attacks that could cause significant and prolonged damage"/>
                     <ComboBoxItem Content="Custom Field"/>
                 </ComboBox>
+                <TextBox x:Name="CustomThreatLevelTextBox" Height="25" Margin="0,0,0,10" Visibility="Collapsed"/>
 
                 <TextBlock Text="Initial Findings:" FontSize="14" Margin="0,0,0,5"/>
                 <TextBox x:Name="InitialFindingsTextBox" Height="60" Margin="0,0,0,10"/>
@@ -150,7 +151,7 @@ $XAML = @"
             <TextBlock Text="SOC Incident Reporter" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Margin="10,0,0,0"/>
             <TextBlock Text="Author: Simon .I" FontSize="12" HorizontalAlignment="Center"/>
             <TextBlock Text="Version: 2024.08.24" FontSize="12" HorizontalAlignment="Center"/>
-            <TextBlock Text="Get newest version from https://github.com/simon-im-security" FontSize="12" HorizontalAlignment="Center"/>
+            <TextBlock Text="Get the newest version from https://github.com/simon-im-security" FontSize="12" HorizontalAlignment="Center"/>
         </StackPanel>
     </Grid>
 </Window>
@@ -172,7 +173,15 @@ function Update-UI {
     $Window.FindName("NewIncidentExternalPanel").Visibility = "Collapsed"
     $Window.FindName("ContinuingIncidentPanel").Visibility = "Collapsed"
     $Window.FindName("ClosingIncidentPanel").Visibility = "Collapsed"
-    
+
+    # Hide all custom fields by default
+    $Window.FindName("CustomIncidentTypeTextBox").Visibility = "Collapsed"
+    $Window.FindName("CustomClientResponseTextBox").Visibility = "Collapsed"
+    $Window.FindName("CustomClientContactSummaryTextBox").Visibility = "Collapsed"
+    $Window.FindName("CustomContinuingClientResponseTextBox").Visibility = "Collapsed"
+    $Window.FindName("CustomClosingClientResponseTextBox").Visibility = "Collapsed"
+    $Window.FindName("CustomThreatLevelTextBox").Visibility = "Collapsed"
+
     if ($selection -eq "New Incident (for your first contact with the client)") {
         $Window.FindName("InternalUseHeader").Visibility = "Visible"
         $Window.FindName("NewIncidentPanel").Visibility = "Visible"
@@ -192,6 +201,22 @@ function Update-UI {
     }
 }
 
+# Function to toggle visibility of custom fields based on selection
+function Toggle-CustomFields {
+    param(
+        $ComboBoxName,
+        $TextBoxName
+    )
+    $comboBox = $Window.FindName($ComboBoxName)
+    $textBox = $Window.FindName($TextBoxName)
+
+    if ($comboBox.SelectedItem.Content -eq "Custom Field") {
+        $textBox.Visibility = "Visible"
+    } else {
+        $textBox.Visibility = "Collapsed"
+    }
+}
+
 # Function to save the information to a hidden local file
 function Save_Info {
     $data = @{
@@ -199,6 +224,7 @@ function Save_Info {
         CyberIncidentType      = $Window.FindName("CyberIncidentTypeComboBox").SelectedItem.Content
         CustomIncidentType     = $Window.FindName("CustomIncidentTypeTextBox").Text
         ThreatLevel            = $Window.FindName("ThreatLevelComboBox").SelectedItem.Content
+        CustomThreatLevel      = $Window.FindName("CustomThreatLevelTextBox").Text
         InitialFindings        = $Window.FindName("InitialFindingsTextBox").Text
         InternalNextSteps      = $Window.FindName("InternalNextStepsTextBox").Text
         ClientName             = $Window.FindName("ClientNameTextBox").Text
@@ -232,6 +258,7 @@ function Reload_Info {
         $Window.FindName("CyberIncidentTypeComboBox").SelectedItem = $Window.FindName("CyberIncidentTypeComboBox").Items | Where-Object { $_.Content -eq $data.CyberIncidentType }
         $Window.FindName("CustomIncidentTypeTextBox").Text = $data.CustomIncidentType
         $Window.FindName("ThreatLevelComboBox").SelectedItem = $Window.FindName("ThreatLevelComboBox").Items | Where-Object { $_.Content -eq $data.ThreatLevel }
+        $Window.FindName("CustomThreatLevelTextBox").Text = $data.CustomThreatLevel
         $Window.FindName("InitialFindingsTextBox").Text = $data.InitialFindings
         $Window.FindName("InternalNextStepsTextBox").Text = $data.InternalNextSteps
         $Window.FindName("ClientNameTextBox").Text = $data.ClientName
@@ -271,6 +298,9 @@ function Export_Report {
         if ($incidentType -eq "Custom Field") { $incidentType = $customIncidentType }
 
         $threatLevel = $Window.FindName("ThreatLevelComboBox").SelectedItem.Content
+        $customThreatLevel = $Window.FindName("CustomThreatLevelTextBox").Text
+        if ($threatLevel -eq "Custom Field") { $threatLevel = $customThreatLevel }
+
         $initialFindings = $Window.FindName("InitialFindingsTextBox").Text
         $internalNextSteps = $Window.FindName("InternalNextStepsTextBox").Text
 
@@ -350,6 +380,36 @@ function Export_Report {
 $IncidentTypeComboBox = $Window.FindName("IncidentTypeComboBox")
 $IncidentTypeComboBox.Add_SelectionChanged([System.Windows.Controls.SelectionChangedEventHandler]{
     Update-UI
+})
+
+$CyberIncidentTypeComboBox = $Window.FindName("CyberIncidentTypeComboBox")
+$CyberIncidentTypeComboBox.Add_SelectionChanged([System.Windows.Controls.SelectionChangedEventHandler]{
+    Toggle-CustomFields -ComboBoxName "CyberIncidentTypeComboBox" -TextBoxName "CustomIncidentTypeTextBox"
+})
+
+$ThreatLevelComboBox = $Window.FindName("ThreatLevelComboBox")
+$ThreatLevelComboBox.Add_SelectionChanged([System.Windows.Controls.SelectionChangedEventHandler]{
+    Toggle-CustomFields -ComboBoxName "ThreatLevelComboBox" -TextBoxName "CustomThreatLevelTextBox"
+})
+
+$ClientResponseComboBox = $Window.FindName("ClientResponseComboBox")
+$ClientResponseComboBox.Add_SelectionChanged([System.Windows.Controls.SelectionChangedEventHandler]{
+    Toggle-CustomFields -ComboBoxName "ClientResponseComboBox" -TextBoxName "CustomClientResponseTextBox"
+})
+
+$ClientContactSummaryComboBox = $Window.FindName("ClientContactSummaryComboBox")
+$ClientContactSummaryComboBox.Add_SelectionChanged([System.Windows.Controls.SelectionChangedEventHandler]{
+    Toggle-CustomFields -ComboBoxName "ClientContactSummaryComboBox" -TextBoxName "CustomClientContactSummaryTextBox"
+})
+
+$ContinuingClientResponseComboBox = $Window.FindName("ContinuingClientResponseComboBox")
+$ContinuingClientResponseComboBox.Add_SelectionChanged([System.Windows.Controls.SelectionChangedEventHandler]{
+    Toggle-CustomFields -ComboBoxName "ContinuingClientResponseComboBox" -TextBoxName "CustomContinuingClientResponseTextBox"
+})
+
+$ClosingClientResponseComboBox = $Window.FindName("ClosingClientResponseComboBox")
+$ClosingClientResponseComboBox.Add_SelectionChanged([System.Windows.Controls.SelectionChangedEventHandler]{
+    Toggle-CustomFields -ComboBoxName "ClosingClientResponseComboBox" -TextBoxName "CustomClosingClientResponseTextBox"
 })
 
 $SaveInfoButton = $Window.FindName("SaveInfoButton")
