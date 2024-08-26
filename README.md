@@ -1,4 +1,4 @@
-# SOC Incident Reporter
+# SOC Incident Reporter (Windows)
 
 **Version**: 2024.08.24  
 **Author**: Simon .I
